@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Load the training dataset
-train_data = pd.read_csv('your_dataset.csv')
+train_data = pd.read_csv('your-dataset.csv')
 
 # Replace erroneous values (999.9) with NaN in the training data
 train_data['HPCP'].replace(999.9, np.nan, inplace=True)
@@ -34,7 +34,14 @@ test_data['Predicted_Flood'] = predictions
 
 # Visualize predicted floods
 plt.figure(figsize=(10, 5))
-plt.plot(test_data['DATE'], test_data['HPCP'], label='Precipitation', color='blue')
+
+# Plotting monthly precipitation
+test_data['DATE'] = pd.to_datetime(test_data['DATE'])
+test_data['MONTH_YEAR'] = test_data['DATE'].dt.to_period('M')
+monthly_precipitation = test_data.groupby('MONTH_YEAR')['HPCP'].sum()
+plt.bar(monthly_precipitation.index.astype(str), monthly_precipitation.values, alpha=0.5, label='Monthly Precipitation')
+
+# Plotting predicted floods
 plt.scatter(test_data[test_data['Predicted_Flood'] == 1]['DATE'], test_data[test_data['Predicted_Flood'] == 1]['HPCP'], color='red', label='Predicted Flood')
 plt.xlabel('Date')
 plt.ylabel('Precipitation')
