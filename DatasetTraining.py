@@ -1,43 +1,45 @@
 import pandas as pd
-from sklearn.ensemble import IsolationForest
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report
+from sklearn.ensemble import RandomForestClassifier
+import numpy as np
+import matplotlib.pyplot as plt
 
-# Load the dataset
-data = pd.read_csv('your-dataset.csv')  # Replace 'your_dataset.csv' with the actual file path
+# Load the training dataset
+train_data = pd.read_csv('your_dataset.csv')
 
-# Select relevant features (latitude, longitude, and temperature)
-features = data[['LATITUDE', 'LONGITUDE', 'TMAX', 'TMIN', 'PRCP']]
+# Replace erroneous values (999.9) with NaN in the training data
+train_data['HPCP'].replace(999.9, np.nan, inplace=True)
+train_data.dropna(subset=['HPCP'], inplace=True)
 
-# Standardize the features
-scaler = StandardScaler()
-features_standardized = scaler.fit_transform(features)
+# Load the test dataset
+test_data = pd.read_csv('test.csv')
 
-# Create a column for anomaly labels (1 for normal, -1 for anomaly)
-data['ANOMALY_LABEL'] = 1  # Assume all data points are normal initially
+# Replace erroneous values (999.9) with NaN in the test data
+test_data['HPCP'].replace(999.9, np.nan, inplace=True)
+test_data.dropna(subset=['HPCP'], inplace=True)
 
-# Identify anomalies based on specific conditions (you can customize this)
-anomaly_condition = (data['TMAX'] > 100) | (data['TMIN'] < -50) | (data['PRCP'] > 1000)
-data.loc[anomaly_condition, 'ANOMALY_LABEL'] = -1
+# Define features and target variable for training
+X_train = train_data[['HPCP']]
+y_train = train_data['ONGOING_FLOOD']
 
-# Split the data into training and testing sets
-train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
+# Choose a model and train it
+model = RandomForestClassifier()
+model.fit(X_train, y_train)
 
-# Train the Isolation Forest model
-model = IsolationForest(contamination=0.01, random_state=42)  # Adjust contamination based on your dataset
-model.fit(features_standardized)
+# Predict likelihood of flood in test data
+X_test = test_data[['HPCP']]
+predictions = model.predict(X_test)
 
-# Predict anomalies on the training set
-train_data['PREDICTION'] = model.predict(scaler.transform(train_data[['LATITUDE', 'LONGITUDE', 'TMAX', 'TMIN', 'PRCP']]))
+# Add predictions to the test data
+test_data['Predicted_Flood'] = predictions
 
-# Evaluate the model on the training set
-print("Training Set Classification Report:")
-print(classification_report(train_data['ANOMALY_LABEL'], train_data['PREDICTION']))
-
-# Predict anomalies on the test set
-test_data['PREDICTION'] = model.predict(scaler.transform(test_data[['LATITUDE', 'LONGITUDE', 'TMAX', 'TMIN', 'PRCP']]))
-
-# Evaluate the model on the test set
-print("\nTest Set Classification Report:")
-print(classification_report(test_data['ANOMALY_LABEL'], test_data['PREDICTION'], zero_division=1))
+# Visualize predicted floods
+plt.figure(figsize=(10, 5))
+plt.plot(test_data['DATE'], test_data['HPCP'], label='Precipitation', color='blue')
+plt.scatter(test_data[test_data['Predicted_Flood'] == 1]['DATE'], test_data[test_data['Predicted_Flood'] == 1]['HPCP'], color='red', label='Predicted Flood')
+plt.xlabel('Date')
+plt.ylabel('Precipitation')
+plt.title('Predicted Flood based on Precipitation')
+plt.legend()
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
