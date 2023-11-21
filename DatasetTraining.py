@@ -1,5 +1,10 @@
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -21,32 +26,31 @@ test_data.dropna(subset=['HPCP'], inplace=True)
 X_train = train_data[['HPCP']]
 y_train = train_data['ONGOING_FLOOD']
 
-# Choose a model and train it
-model = RandomForestClassifier()
-model.fit(X_train, y_train)
+# Models to use
+models = {
+    'Random Forest': RandomForestClassifier(),
+    'Logistic Regression': LogisticRegression(),
+    'SVM': SVC(),
+    'KNN': KNeighborsClassifier(),
+    'Decision Tree': DecisionTreeClassifier(),
+    'Gradient Boosting': GradientBoostingClassifier(),
+    'Naive Bayes': GaussianNB()
+}
 
-# Predict likelihood of flood in test data
-X_test = test_data[['HPCP']]
-predictions = model.predict(X_test)
+# Train and predict using each model
+for name, model in models.items():
+    # Train the model
+    model.fit(X_train, y_train)
 
-# Add predictions to the test data
-test_data['Predicted_Flood'] = predictions
+    # Predict likelihood of flood in test data
+    X_test = test_data[['HPCP']]
+    predictions = model.predict(X_test)
 
-# Visualize predicted floods
-plt.figure(figsize=(10, 5))
+    # Add predictions to the test data
+    test_data[f'Predicted_Flood_{name}'] = predictions
 
-# Plotting monthly precipitation
-test_data['DATE'] = pd.to_datetime(test_data['DATE'])
-test_data['MONTH_YEAR'] = test_data['DATE'].dt.to_period('M')
-monthly_precipitation = test_data.groupby('MONTH_YEAR')['HPCP'].sum()
-plt.bar(monthly_precipitation.index.astype(str), monthly_precipitation.values, alpha=0.5, label='Monthly Precipitation')
-
-# Plotting predicted floods
-plt.scatter(test_data[test_data['Predicted_Flood'] == 1]['DATE'], test_data[test_data['Predicted_Flood'] == 1]['HPCP'], color='red', label='Predicted Flood')
-plt.xlabel('Date')
-plt.ylabel('Precipitation')
-plt.title('Predicted Flood based on Precipitation')
-plt.legend()
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.show()
+# Display the predictions for each model
+for name in models.keys():
+    print(f'Predictions from {name}:')
+    print(test_data[f'Predicted_Flood_{name}'])
+    print('\n')
