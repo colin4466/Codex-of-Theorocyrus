@@ -19,7 +19,7 @@ def send_email_alert():
     # Replace with your email credentials and recipient email
     sender_email = 'sillfingmongoose@gmail.com'
     recipient_email = 'cgorgen@uiowa.edu'
-    password = 'huyw rpvy scme obdw'
+    password = ''
 
     subject = 'Emergency Alert'
     body = 'Uncharacteristic spike detected in sensor data!'
